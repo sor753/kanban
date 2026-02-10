@@ -2,14 +2,19 @@ import { useState } from 'react';
 import type { Column } from './KanbanBoard';
 import KanbanTask from './KanbanTask';
 import Button from './ui/Button';
-import { Trash2 } from 'lucide-react';
+import { Plus, Trash2 } from 'lucide-react';
 
 interface KanbanColumnProps {
   column: Column;
   onDeleteColumn: (columnId: string) => void;
+  onAddTask: (columnId: string) => void;
 }
 
-const KanbanColumn = ({ column, onDeleteColumn }: KanbanColumnProps) => {
+const KanbanColumn = ({
+  column,
+  onDeleteColumn,
+  onAddTask,
+}: KanbanColumnProps) => {
   const [isEditingTitle, setIsEditingTitle] = useState(false);
 
   return (
@@ -32,6 +37,21 @@ const KanbanColumn = ({ column, onDeleteColumn }: KanbanColumnProps) => {
               className="h-12 w-12 p-0 rounded-full text-red-600 hover:text-red-700 hover:bg-pink-100 dark:text-gray-300 dark:hover:text-white dark:hover:bg-gray-600"
             >
               <Trash2 className="h-6 w-6" />
+            </Button>
+          </div>
+          <div className="flex items-center justify-between">
+            <span className="text-sm text-gray-500 dark:text-gray-400">
+              {column.tasks.length}{' '}
+              {column.tasks.length === 1 ? 'task' : 'tasks'}
+            </span>
+            <Button
+              onClick={() => {
+                onAddTask(column.id);
+              }}
+              className="h-8 px-2 rounded-md text-blue-600 hover:text-blue-700 hover:bg-blue-50 dark:text-blue-500 dark:hover:text-blue-400 dark:hover:bg-blue-500/10"
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              Add
             </Button>
           </div>
         </div>

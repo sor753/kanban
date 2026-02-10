@@ -74,6 +74,19 @@ const KanbanBoard = () => {
     setColumns(columns.filter((col) => col.id !== columnId));
   };
 
+  const addTask = (columnId: string) => {
+    const newTask = {
+      id: `task-${Date.now()}`,
+      content: 'New Task',
+      createdAt: new Date(),
+    };
+    setColumns(
+      columns.map((col) =>
+        col.id === columnId ? { ...col, tasks: [...col.tasks, newTask] } : col,
+      ),
+    );
+  };
+
   return (
     <div className="w-full min-h-screen bg-gray-100 dark:bg-gray-900 transition-colors duration-300">
       <div className="flex gap-6 overflow-x-auto pb-6 px-6 w-full">
@@ -82,6 +95,7 @@ const KanbanBoard = () => {
             key={column.id}
             column={column}
             onDeleteColumn={deleteColumn}
+            onAddTask={addTask}
           />
         ))}
 
