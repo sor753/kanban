@@ -74,6 +74,14 @@ const KanbanBoard = () => {
     setColumns(columns.filter((col) => col.id !== columnId));
   };
 
+  const updateColumnTitle = (columnId: string, newTitle: string) => {
+    setColumns(
+      columns.map((col) =>
+        col.id === columnId ? { ...col, title: newTitle } : col,
+      ),
+    );
+  };
+
   const addTask = (columnId: string) => {
     const newTask = {
       id: `task-${Date.now()}`,
@@ -87,6 +95,26 @@ const KanbanBoard = () => {
     );
   };
 
+  const updateTask = (taskId: string, newContent: string) => {
+    setColumns(
+      columns.map((col) => ({
+        ...col,
+        tasks: col.tasks.map((task) =>
+          task.id === taskId ? { ...task, content: newContent } : task,
+        ),
+      })),
+    );
+  };
+
+  const deleteTask = (taskId: string) => {
+    setColumns(
+      columns.map((col) => ({
+        ...col,
+        tasks: col.tasks.filter((task) => task.id !== taskId),
+      })),
+    );
+  };
+
   return (
     <div className="w-full min-h-screen bg-gray-100 dark:bg-gray-900 transition-colors duration-300">
       <div className="flex gap-6 overflow-x-auto pb-6 px-6 w-full">
@@ -96,6 +124,9 @@ const KanbanBoard = () => {
             column={column}
             onDeleteColumn={deleteColumn}
             onAddTask={addTask}
+            onUpdateTitle={updateColumnTitle}
+            onUpdateTask={updateTask}
+            onDeleteTask={deleteTask}
           />
         ))}
 

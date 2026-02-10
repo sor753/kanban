@@ -8,12 +8,18 @@ interface KanbanColumnProps {
   column: Column;
   onDeleteColumn: (columnId: string) => void;
   onAddTask: (columnId: string) => void;
+  onUpdateTitle: (columnId: string, newTitle: string) => void;
+  onUpdateTask: (taskId: string, newContent: string) => void;
+  onDeleteTask: (taskId: string) => void;
 }
 
 const KanbanColumn = ({
   column,
   onDeleteColumn,
   onAddTask,
+  onUpdateTitle,
+  onUpdateTask,
+  onDeleteTask,
 }: KanbanColumnProps) => {
   const [isEditingTitle, setIsEditingTitle] = useState(false);
 
@@ -58,7 +64,13 @@ const KanbanColumn = ({
         <div className="p-4 overflow-y-auto flex-1 min-h-0">
           <div className="space-y-3">
             {column.tasks.map((task, index) => (
-              <KanbanTask key={task.id} task={task} index={index} />
+              <KanbanTask
+                key={task.id}
+                task={task}
+                index={index}
+                onUpdate={onUpdateTask}
+                onDelete={onDeleteTask}
+              />
             ))}
           </div>
         </div>
