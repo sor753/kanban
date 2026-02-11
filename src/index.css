@@ -1,2 +1,22 @@
 @import "tailwindcss";
 @custom-variant dark (&:where(.dark, .dark *));
+
+/* Base thin scrollbar */
+.thin-scrollbar::-webkit-scrollbar {
+  width: 4px;       /* Vertical scrollbar width */
+  height: 8px;      /* Horizontal scrollbar height — make this thicker */
+}
+
+.thin-scrollbar::-webkit-scrollbar-thumb {
+  background-color: rgba(0, 0, 0, 0.2); /* Light mode thumb */
+  border-radius: 9999px;
+}
+
+.thin-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+/* Dark mode customization */
+.dark .thin-scrollbar::-webkit-scrollbar-thumb {
+  background-color: #3b82f6; /* Tailwind's blue-500 */
+}

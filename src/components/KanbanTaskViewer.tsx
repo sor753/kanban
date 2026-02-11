@@ -18,7 +18,15 @@ const KanbanTaskViewer = ({
     <>
       <div
         onClick={onEdit}
-        className="text-sm text-gray-800 dark:text-gray-100 leading-relaxed hover:text-gray-900 dark:hover:text-white cursor-text h-17.5 overflow-y-auto pr-1"
+        className={
+          'text-sm ' +
+          'text-gray-800 dark:text-gray-100 ' +
+          'leading-relaxed ' +
+          'hover:text-gray-900 dark:hover:text-white ' +
+          'cursor-text ' +
+          'h-17.5 overflow-y-auto pr-1 ' +
+          'thin-scrollbar'
+        }
       >
         {content}
       </div>
