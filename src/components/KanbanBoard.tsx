@@ -2,7 +2,7 @@ import { useState } from 'react';
 import KanbanColumn from './KanbanColumn';
 import Button from './ui/Button';
 import { Plus } from 'lucide-react';
-import { DragDropContext } from '@hello-pangea/dnd';
+import { DragDropContext, type DropResult } from '@hello-pangea/dnd';
 
 export type Task = {
   id: string;
@@ -119,7 +119,67 @@ const KanbanBoard = () => {
     );
   };
 
-  const handelDragEnd = (result) => {};
+  const handelDragEnd = (result: DropResult) => {
+    const { source, destination } = result;
+
+    if (!destination) return;
+
+    if (
+      source.droppableId === destination.droppableId &&
+      source.index === destination.index
+    ) {
+      return;
+    }
+
+    // Find the column object for the source of the drag
+    const sourceColumn = columns.find((col) => col.id === source.droppableId);
+
+    // Find the column object for the destination of the drag
+    const destColumn = columns.find(
+      (col) => col.id === destination.droppableId,
+    );
+
+    if (!sourceColumn || !destColumn) return;
+
+    // Create a shallow copy of the source column's tasks to avoid direct mutation
+    const sourceTasks = [...sourceColumn.tasks];
+
+    // Remove the task from the sourceTasks array using the index
+    const [movedTask] = sourceTasks.splice(source.index, 1);
+
+    // If the task is moved within the same column (reordering)
+    if (sourceColumn === destColumn) {
+      // Insert the task at the new position within the same task array
+      sourceTasks.splice(destination.index, 0, movedTask);
+
+      // Update the columns state with the modified column
+      setColumns(
+        columns.map((col) =>
+          col.id === sourceColumn.id ? { ...col, tasks: sourceTasks } : col,
+        ),
+      );
+    } else {
+      // If the task is moved to a different column
+
+      // Create a shallow copy of the destination column's tasks
+      const destTasks = [...destColumn.tasks];
+
+      // Insert the moved task into the destination at the target index
+      destTasks.splice(destination.index, 0, movedTask);
+
+      // Update both the source and destination columns in the state
+      setColumns(
+        columns.map((col) => {
+          // update source column
+          if (col.id === sourceColumn.id) return { ...col, tasks: sourceTasks };
+          // update destination column
+          if (col.id === destColumn.id) return { ...col, tasks: destTasks };
+          // unchanged columns
+          return col;
+        }),
+      );
+    }
+  };
 
   return (
     <div className="w-full min-h-screen bg-gray-100 dark:bg-gray-900 transition-colors duration-300">
