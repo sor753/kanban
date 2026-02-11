@@ -14,8 +14,6 @@ interface KanbanTaskProps {
 const KanbanTask = ({ task, index, onUpdate, onDelete }: KanbanTaskProps) => {
   const [isEditing, setIsEditing] = useState(false);
 
-  console.log(isEditing);
-
   const [tempContent, setTempContent] = useState(task.content);
 
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
