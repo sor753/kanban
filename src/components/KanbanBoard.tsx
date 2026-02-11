@@ -2,6 +2,7 @@ import { useState } from 'react';
 import KanbanColumn from './KanbanColumn';
 import Button from './ui/Button';
 import { Plus } from 'lucide-react';
+import { DragDropContext } from '@hello-pangea/dnd';
 
 export type Task = {
   id: string;
@@ -118,31 +119,35 @@ const KanbanBoard = () => {
     );
   };
 
+  const handelDragEnd = (result) => {};
+
   return (
     <div className="w-full min-h-screen bg-gray-100 dark:bg-gray-900 transition-colors duration-300">
-      <div className="flex gap-6 overflow-x-auto pb-6 px-6 w-full">
-        {columns.map((column) => (
-          <KanbanColumn
-            key={column.id}
-            column={column}
-            onDeleteColumn={deleteColumn}
-            onAddTask={addTask}
-            onUpdateTitle={updateColumnTitle}
-            onUpdateTask={updateTask}
-            onDeleteTask={deleteTask}
-          />
-        ))}
+      <DragDropContext onDragEnd={handelDragEnd}>
+        <div className="flex gap-6 overflow-x-auto pb-6 px-6 w-full">
+          {columns.map((column) => (
+            <KanbanColumn
+              key={column.id}
+              column={column}
+              onDeleteColumn={deleteColumn}
+              onAddTask={addTask}
+              onUpdateTitle={updateColumnTitle}
+              onUpdateTask={updateTask}
+              onDeleteTask={deleteTask}
+            />
+          ))}
 
-        <div className="shrink-0">
-          <Button
-            onClick={addColumn}
-            className="h-12 px-6 rounded-md bg-white/50 dark:bg-gray-700 dark:text-white hover:bg-white/80 dark:hover:bg-gray-600 border-dashed border-2 border-gray-300 dark:border-gray-500 hover:border-gray-400 transition-all duration-200"
-          >
-            <Plus className="w-5 h-5 mr-2" />
-            Add Column
-          </Button>
+          <div className="shrink-0">
+            <Button
+              onClick={addColumn}
+              className="h-12 px-6 rounded-md bg-white/50 dark:bg-gray-700 dark:text-white hover:bg-white/80 dark:hover:bg-gray-600 border-dashed border-2 border-gray-300 dark:border-gray-500 hover:border-gray-400 transition-all duration-200"
+            >
+              <Plus className="w-5 h-5 mr-2" />
+              Add Column
+            </Button>
+          </div>
         </div>
-      </div>
+      </DragDropContext>
     </div>
   );
 };
