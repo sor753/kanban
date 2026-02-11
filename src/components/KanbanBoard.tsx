@@ -107,6 +107,9 @@ const KanbanBoard = () => {
   };
 
   const deleteTask = (taskId: string) => {
+    console.log(taskId);
+    console.log(columns);
+
     setColumns(
       columns.map((col) => ({
         ...col,

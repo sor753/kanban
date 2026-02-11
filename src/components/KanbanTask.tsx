@@ -13,6 +13,8 @@ interface KanbanTaskProps {
 const KanbanTask = ({ task, index, onUpdate, onDelete }: KanbanTaskProps) => {
   const [isEditing, setIsEditing] = useState(false);
 
+  console.log(isEditing);
+
   const [tempContent, setTempContent] = useState(task.content);
 
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
@@ -42,7 +44,7 @@ const KanbanTask = ({ task, index, onUpdate, onDelete }: KanbanTaskProps) => {
 
   return (
     <div className="group bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-600 raounded-lg p-2 shadow-sm hover:shadow-md transition-all transition-200">
-      <div>
+      <div className="relative">
         {isEditing ? (
           <KanbanTaskEditor
             taskId={task.id}
