@@ -119,25 +119,69 @@ const KanbanBoard = () => {
     );
   };
 
-  const handelDragEnd = (result: DropResult) => {
-    const { source, destination } = result;
+  const [dragStart, setDragStart] = useState<{
+    index: number;
+    areaId: string;
+  } | null>(null);
+  // const [dragEnd, setDragEnd] = useState<{
+  //   index: number;
+  //   areaId: string;
+  // } | null>(null);
+  const [noDrop, setNoDrop] = useState<'' | 'noDrop'>('');
 
-    if (!destination) return;
+  // e.dataTransferの代わりにuseStateを使用すると、より多くのデータを転送できます。
+  const handleDragStart = (
+    _e: React.DragEvent<HTMLDivElement>,
+    index: number,
+    areaId: string,
+  ) => {
+    setDragStart({ index, areaId });
+  };
+
+  // noDrop ゾーンに入ると、状態が更新され、スタイル設定に使用されます。
+  const handleDragEnter = (
+    _e: React.DragEvent<HTMLDivElement>,
+    areaId?: string,
+  ) => {
+    if (!areaId) {
+      setNoDrop('noDrop');
+    }
+  };
+
+  // これがないとDNDは機能しません
+  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+  };
+
+  // setNoDrop を nothing に設定すると、スタイルが通常に戻ります
+  const handleDragLeave = () => {
+    setNoDrop('');
+  };
+
+  const handelDragEnd = (
+    _e: React.DragEvent<HTMLDivElement>,
+    // index: number,
+    areaId: string,
+  ) => {
+    // const { source, destination } = result;
+    setNoDrop('');
+    const source = dragStart;
+    const destination = { areaId };
+
+    if (!destination || !source) return;
 
     if (
-      source.droppableId === destination.droppableId &&
-      source.index === destination.index
+      source?.areaId === destination.areaId
+      // source.index === destination.index
     ) {
       return;
     }
 
     // Find the column object for the source of the drag
-    const sourceColumn = columns.find((col) => col.id === source.droppableId);
+    const sourceColumn = columns.find((col) => col.id === source.areaId);
 
     // Find the column object for the destination of the drag
-    const destColumn = columns.find(
-      (col) => col.id === destination.droppableId,
-    );
+    const destColumn = columns.find((col) => col.id === destination.areaId);
 
     if (!sourceColumn || !destColumn) return;
 
@@ -150,7 +194,7 @@ const KanbanBoard = () => {
     // If the task is moved within the same column (reordering)
     if (sourceColumn === destColumn) {
       // Insert the task at the new position within the same task array
-      sourceTasks.splice(destination.index, 0, movedTask);
+      sourceTasks.splice(0, 0, movedTask);
 
       // Update the columns state with the modified column
       setColumns(
@@ -165,7 +209,7 @@ const KanbanBoard = () => {
       const destTasks = [...destColumn.tasks];
 
       // Insert the moved task into the destination at the target index
-      destTasks.splice(destination.index, 0, movedTask);
+      destTasks.splice(0, 0, movedTask);
 
       // Update both the source and destination columns in the state
       setColumns(
@@ -179,35 +223,44 @@ const KanbanBoard = () => {
         }),
       );
     }
+
+    // Reset drag state
+    setDragStart(null);
   };
 
   return (
     <div className="w-full min-h-screen flex items-center bg-gray-100 dark:bg-gray-900 transition-colors duration-300">
-      <DragDropContext onDragEnd={handelDragEnd}>
-        <div className="flex gap-6 overflow-x-auto pb-6 px-6 w-full thin-scrollbar">
-          {columns.map((column) => (
-            <KanbanColumn
-              key={column.id}
-              column={column}
-              onDeleteColumn={deleteColumn}
-              onAddTask={addTask}
-              onUpdateTitle={updateColumnTitle}
-              onUpdateTask={updateTask}
-              onDeleteTask={deleteTask}
-            />
-          ))}
+      {/* <DragDropContext onDragEnd={handelDragEnd}> */}
+      <div className="flex gap-6 overflow-x-auto pb-6 px-6 w-full thin-scrollbar">
+        {columns.map((column) => (
+          <KanbanColumn
+            key={column.id}
+            column={column}
+            onDeleteColumn={deleteColumn}
+            onAddTask={addTask}
+            onUpdateTitle={updateColumnTitle}
+            onUpdateTask={updateTask}
+            onDeleteTask={deleteTask}
+            onDragEnter={handleDragEnter}
+            handleDragOver={handleDragOver}
+            handleDragLeave={handleDragLeave}
+            handleDrop={handelDragEnd}
+            handleDragStart={handleDragStart}
+            handelDragEnd={handelDragEnd}
+          />
+        ))}
 
-          <div className="shrink-0">
-            <Button
-              onClick={addColumn}
-              className="h-12 px-6 rounded-md bg-white/50 dark:bg-gray-700 dark:text-white hover:bg-white/80 dark:hover:bg-gray-600 border-dashed border-2 border-gray-300 dark:border-gray-500 hover:border-gray-400 transition-all duration-200"
-            >
-              <Plus className="w-5 h-5 mr-2" />
-              Add Column
-            </Button>
-          </div>
+        <div className="shrink-0">
+          <Button
+            onClick={addColumn}
+            className="h-12 px-6 rounded-md bg-white/50 dark:bg-gray-700 dark:text-white hover:bg-white/80 dark:hover:bg-gray-600 border-dashed border-2 border-gray-300 dark:border-gray-500 hover:border-gray-400 transition-all duration-200"
+          >
+            <Plus className="w-5 h-5 mr-2" />
+            Add Column
+          </Button>
         </div>
-      </DragDropContext>
+      </div>
+      {/* </DragDropContext> */}
     </div>
   );
 };

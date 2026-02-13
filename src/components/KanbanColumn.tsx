@@ -1,9 +1,7 @@
-import { useState } from 'react';
 import type { Column } from './KanbanBoard';
 import KanbanTask from './KanbanTask';
 import Button from './ui/Button';
 import { Plus, Trash2 } from 'lucide-react';
-import { Droppable } from '@hello-pangea/dnd';
 
 interface KanbanColumnProps {
   column: Column;
@@ -12,32 +10,43 @@ interface KanbanColumnProps {
   onUpdateTitle: (columnId: string, newTitle: string) => void;
   onUpdateTask: (taskId: string, newContent: string) => void;
   onDeleteTask: (taskId: string) => void;
+  onDragEnter: (_e: React.DragEvent<HTMLDivElement>, areaId?: string) => void;
+  handleDragOver: (e: React.DragEvent<HTMLDivElement>) => void;
+  handleDragLeave: () => void;
+  handleDrop: (
+    _e: React.DragEvent<HTMLDivElement>,
+    // index: number,
+    areaId: string,
+  ) => void;
+  handleDragStart: (
+    _e: React.DragEvent<HTMLDivElement>,
+    index: number,
+    areaId: string,
+  ) => void;
+  handelDragEnd: (_e: React.DragEvent<HTMLDivElement>, areaId: string) => void;
 }
 
 const KanbanColumn = ({
   column,
   onDeleteColumn,
   onAddTask,
-  onUpdateTitle,
   onUpdateTask,
   onDeleteTask,
+  onDragEnter,
+  handleDragOver,
+  handleDragLeave,
+  handleDrop,
+  handleDragStart,
+  handelDragEnd,
 }: KanbanColumnProps) => {
-  const [isEditingTitle, setIsEditingTitle] = useState(false);
-
   return (
     <div className="shrink-0 w-80">
       <div className="h-[85vh] overflow-hidden bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 flex flex-col transition-colors">
         <div className="px-4 py-1 border-b border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-700">
           <div className="flex items-center justify-between mb-2">
-            {isEditingTitle ? (
-              <>
-                <input type="text" />
-              </>
-            ) : (
-              <h3 className="text-lg font-semibold text-gray-800 dark:text-white cursor-pointer hover:text-blue-600 dark:hover:text-blue-500 transition-colors">
-                {column.title}
-              </h3>
-            )}
+            <h3 className="text-lg font-semibold text-gray-800 dark:text-white cursor-pointer hover:text-blue-600 dark:hover:text-blue-500 transition-colors">
+              {column.title}
+            </h3>
 
             <Button
               onClick={() => onDeleteColumn(column.id)}
@@ -62,29 +71,37 @@ const KanbanColumn = ({
             </Button>
           </div>
         </div>
-        <Droppable droppableId={column.id}>
-          {(provided, snapshot) => (
-            <div
-              ref={provided.innerRef}
-              {...provided.droppableProps}
-              className={`p-4 overflow-y-auto flex-1 min-h-0 thin-scrollbar ${
-                snapshot.isDraggingOver ? 'bg-blue-50 dark:bg-blue-500' : ''
-              }`}
-            >
-              <div className="space-y-3">
-                {column.tasks.map((task, index) => (
-                  <KanbanTask
-                    key={task.id}
-                    task={task}
-                    index={index}
-                    onUpdate={onUpdateTask}
-                    onDelete={onDeleteTask}
-                  />
-                ))}
-              </div>
-            </div>
-          )}
-        </Droppable>
+        {/* <Droppable droppableId={column.id}>
+          {(provided, snapshot) => ( */}
+        <div
+          // ref={provided.innerRef}
+          // {...provided.droppableProps}
+          // className={`p-4 overflow-y-auto flex-1 min-h-0 thin-scrollbar ${
+          //   snapshot.isDraggingOver ? 'bg-blue-50 dark:bg-blue-500' : ''
+          // }`}
+          className={`p-4 overflow-y-auto flex-1 min-h-0 thin-scrollbar`}
+          onDragEnter={(e) => onDragEnter(e, column.id)}
+          onDragOver={handleDragOver}
+          onDragLeave={handleDragLeave}
+          onDrop={(e) => handleDrop(e, column.id)}
+        >
+          <div className="space-y-3">
+            {column.tasks.map((task, index) => (
+              <KanbanTask
+                key={task.id}
+                task={task}
+                index={index}
+                onUpdate={onUpdateTask}
+                onDelete={onDeleteTask}
+                areaId={column.id}
+                handleDragStart={handleDragStart}
+                handelDragEnd={handelDragEnd}
+              />
+            ))}
+          </div>
+        </div>
+        {/* )}
+        </Droppable> */}
       </div>
     </div>
   );
