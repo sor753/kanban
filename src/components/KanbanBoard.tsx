@@ -129,40 +129,50 @@ const KanbanBoard = () => {
   // } | null>(null);
   const [noDrop, setNoDrop] = useState<'' | 'noDrop'>('');
 
+  // dragstart: ドラッグの開始
   // e.dataTransferの代わりにuseStateを使用すると、より多くのデータを転送できます。
   const handleDragStart = (
-    _e: React.DragEvent<HTMLDivElement>,
+    e: React.DragEvent<HTMLDivElement>,
     index: number,
     areaId: string,
   ) => {
+    console.log('dragStart', e, index, areaId);
     setDragStart({ index, areaId });
   };
 
+  // drageenter: ドラッグ要素がドロップ要素内に入った時
   // noDrop ゾーンに入ると、状態が更新され、スタイル設定に使用されます。
   const handleDragEnter = (
-    _e: React.DragEvent<HTMLDivElement>,
+    e: React.DragEvent<HTMLDivElement>,
     areaId?: string,
   ) => {
+    console.log('dragEnter', e, areaId);
     if (!areaId) {
       setNoDrop('noDrop');
     }
   };
 
+  // dragover: ドラッグ要素がドロップ要素上にある時(※ 繰り返し呼ばれ続ける)
   // これがないとDNDは機能しません
   const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+    // console.log('dragover', e);
     e.preventDefault();
   };
 
+  // dragleave: ドラッグ要素がドロップ要素から抜けたとき
   // setNoDrop を nothing に設定すると、スタイルが通常に戻ります
-  const handleDragLeave = () => {
+  const handleDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
+    console.log('dragLeave', e);
     setNoDrop('');
   };
 
+  // drop: ドラッグ要素がドロップ要素上にドロップされたとき
   const handelDragEnd = (
-    _e: React.DragEvent<HTMLDivElement>,
+    e: React.DragEvent<HTMLDivElement>,
     // index: number,
     areaId: string,
   ) => {
+    console.log('drop', e, areaId);
     // const { source, destination } = result;
     setNoDrop('');
     const source = dragStart;
