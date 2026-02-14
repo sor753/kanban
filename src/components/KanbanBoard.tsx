@@ -45,13 +45,21 @@ const KanbanBoard = () => {
     // console.log('dragStart', e, index, areaId);
     setStartPos({ x: e.clientX, y: e.clientY });
     setDragStart({ index, areaId });
+    const currentHeight = e.currentTarget.offsetHeight;
+    const currentWidth = e.currentTarget.offsetWidth;
+    const currentPositionX = e.currentTarget.getBoundingClientRect().x;
+    const currentPositionY = e.currentTarget.getBoundingClientRect().y;
+    e.currentTarget.style.left = `${currentPositionX}px`;
+    e.currentTarget.style.top = `${currentPositionY}px`;
+    e.currentTarget.style.width = `${currentWidth}px`;
+    e.currentTarget.style.height = `${currentHeight}px`;
+    e.currentTarget.style.position = 'fixed';
   };
 
   const handleDrag = (e: React.DragEvent<HTMLDivElement>) => {
     if (startPos) {
       const distanceX = e.clientX - startPos.x;
       const distanceY = e.clientY - startPos.y;
-      e.currentTarget.style.position = 'absolute';
       e.currentTarget.style.transform = `translate(${distanceX}px, ${distanceY}px)`;
       setDistancePos({ x: distanceX, y: distanceY });
     }
