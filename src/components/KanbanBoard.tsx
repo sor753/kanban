@@ -1,123 +1,22 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import KanbanColumn from './KanbanColumn';
 import Button from './ui/Button';
 import { Plus } from 'lucide-react';
 import { DragDropContext, type DropResult } from '@hello-pangea/dnd';
-
-export type Task = {
-  id: string;
-  content: string;
-  createdAt: Date;
-};
-
-export type Column = {
-  id: string;
-  title: string;
-  tasks: Task[];
-};
-
-const defoultColumns: Column[] = [
-  {
-    id: 'todo',
-    title: 'To Do',
-    tasks: [
-      {
-        id: 'task-1',
-        content: 'Design new landing page',
-        createdAt: new Date('2025-07-25T00:00:00'),
-      },
-      {
-        id: 'task-2',
-        content: 'Set up database schema',
-        createdAt: new Date('2025-07-25T00:00:00'),
-      },
-    ],
-  },
-  {
-    id: 'in-progress',
-    title: 'In Progress',
-    tasks: [
-      {
-        id: 'task-3',
-        content: 'Implement user authentication',
-        createdAt: new Date('2025-07-25T00:00:00'),
-      },
-    ],
-  },
-  {
-    id: 'done',
-    title: 'Done',
-    tasks: [
-      {
-        id: 'task-4',
-        content: 'Create project structure',
-        createdAt: new Date('2025-07-25T00:00:00'),
-      },
-    ],
-  },
-];
+import { defoultColumns } from '../data/columns';
+import useColumn from './useColumn';
 
 const KanbanBoard = () => {
   const [columns, setColumns] = useState(defoultColumns);
 
-  const addColumn = (
-    event: React.MouseEvent<HTMLButtonElement, MouseEvent>,
-  ): void => {
-    event.preventDefault();
-
-    setColumns([
-      ...columns,
-      { id: `column-${Date.now()}`, title: 'New Column', tasks: [] },
-    ]);
-  };
-
-  const deleteColumn = (columnId: string) => {
-    setColumns(columns.filter((col) => col.id !== columnId));
-  };
-
-  const updateColumnTitle = (columnId: string, newTitle: string) => {
-    setColumns(
-      columns.map((col) =>
-        col.id === columnId ? { ...col, title: newTitle } : col,
-      ),
-    );
-  };
-
-  const addTask = (columnId: string) => {
-    const newTask = {
-      id: `task-${Date.now()}`,
-      content: 'New Task',
-      createdAt: new Date(),
-    };
-    setColumns(
-      columns.map((col) =>
-        col.id === columnId ? { ...col, tasks: [...col.tasks, newTask] } : col,
-      ),
-    );
-  };
-
-  const updateTask = (taskId: string, newContent: string) => {
-    setColumns(
-      columns.map((col) => ({
-        ...col,
-        tasks: col.tasks.map((task) =>
-          task.id === taskId ? { ...task, content: newContent } : task,
-        ),
-      })),
-    );
-  };
-
-  const deleteTask = (taskId: string) => {
-    console.log(taskId);
-    console.log(columns);
-
-    setColumns(
-      columns.map((col) => ({
-        ...col,
-        tasks: col.tasks.filter((task) => task.id !== taskId),
-      })),
-    );
-  };
+  const {
+    addColumn,
+    deleteColumn,
+    updateColumnTitle,
+    addTask,
+    updateTask,
+    deleteTask,
+  } = useColumn({ columns, setColumns });
 
   const [dragStart, setDragStart] = useState<{
     index: number;
@@ -128,6 +27,13 @@ const KanbanBoard = () => {
   //   areaId: string;
   // } | null>(null);
   const [noDrop, setNoDrop] = useState<'' | 'noDrop'>('');
+  const [startPos, setStartPos] = useState<{ x: number; y: number } | null>(
+    null,
+  );
+  const [distancePos, setDistancePos] = useState<{
+    x: number;
+    y: number;
+  } | null>(null);
 
   // dragstart: ドラッグの開始
   // e.dataTransferの代わりにuseStateを使用すると、より多くのデータを転送できます。
@@ -136,8 +42,19 @@ const KanbanBoard = () => {
     index: number,
     areaId: string,
   ) => {
-    console.log('dragStart', e, index, areaId);
+    // console.log('dragStart', e, index, areaId);
+    setStartPos({ x: e.clientX, y: e.clientY });
     setDragStart({ index, areaId });
+  };
+
+  const handleDrag = (e: React.DragEvent<HTMLDivElement>) => {
+    if (startPos) {
+      const distanceX = e.clientX - startPos.x;
+      const distanceY = e.clientY - startPos.y;
+      e.currentTarget.style.position = 'absolute';
+      e.currentTarget.style.transform = `translate(${distanceX}px, ${distanceY}px)`;
+      setDistancePos({ x: distanceX, y: distanceY });
+    }
   };
 
   // drageenter: ドラッグ要素がドロップ要素内に入った時
@@ -146,7 +63,7 @@ const KanbanBoard = () => {
     e: React.DragEvent<HTMLDivElement>,
     areaId?: string,
   ) => {
-    console.log('dragEnter', e, areaId);
+    // console.log('dragEnter', e, areaId);
     if (!areaId) {
       setNoDrop('noDrop');
     }
@@ -161,8 +78,8 @@ const KanbanBoard = () => {
 
   // dragleave: ドラッグ要素がドロップ要素から抜けたとき
   // setNoDrop を nothing に設定すると、スタイルが通常に戻ります
-  const handleDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
-    console.log('dragLeave', e);
+  const handleDragLeave = () => {
+    // console.log('dragLeave', e);
     setNoDrop('');
   };
 
@@ -172,8 +89,12 @@ const KanbanBoard = () => {
     // index: number,
     areaId: string,
   ) => {
-    console.log('drop', e, areaId);
+    e.currentTarget.style.position = 'static';
+    e.currentTarget.style.transform = `translate(0px, 0px)`;
+    // console.log('drop', e, areaId);
     // const { source, destination } = result;
+    setStartPos(null);
+    setDistancePos(null);
     setNoDrop('');
     const source = dragStart;
     const destination = { areaId };
@@ -257,6 +178,7 @@ const KanbanBoard = () => {
             handleDrop={handelDragEnd}
             handleDragStart={handleDragStart}
             handelDragEnd={handelDragEnd}
+            handleDrag={handleDrag}
           />
         ))}
 

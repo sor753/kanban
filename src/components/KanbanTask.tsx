@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
-import type { Task } from './KanbanBoard';
 import KanbanTaskEditor from './KanbanTaskEditor';
 import KanbanTaskViewer from './KanbanTaskViewer';
 import { Draggable } from '@hello-pangea/dnd';
+import type { Task } from '../data/columns';
 
 interface KanbanTaskProps {
   task: Task;
@@ -16,6 +16,7 @@ interface KanbanTaskProps {
     areaId: string,
   ) => void;
   handelDragEnd: (_e: React.DragEvent<HTMLDivElement>, areaId: string) => void;
+  handleDrag: (e: React.DragEvent<HTMLDivElement>) => void;
 }
 
 const KanbanTask = ({
@@ -26,6 +27,7 @@ const KanbanTask = ({
   areaId,
   handleDragStart,
   handelDragEnd,
+  handleDrag,
 }: KanbanTaskProps) => {
   const [isEditing, setIsEditing] = useState(false);
 
@@ -75,6 +77,7 @@ const KanbanTask = ({
       draggable={true}
       onDragStart={(e) => handleDragStart(e, index, areaId)}
       onDragEnd={(e) => handelDragEnd(e, areaId)}
+      onDrag={(e) => handleDrag(e)}
     >
       <div className="relative">
         {isEditing ? (

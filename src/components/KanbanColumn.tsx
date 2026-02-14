@@ -1,4 +1,4 @@
-import type { Column } from './KanbanBoard';
+import type { Column } from '../data/columns';
 import KanbanTask from './KanbanTask';
 import Button from './ui/Button';
 import { Plus, Trash2 } from 'lucide-react';
@@ -24,6 +24,7 @@ interface KanbanColumnProps {
     areaId: string,
   ) => void;
   handelDragEnd: (_e: React.DragEvent<HTMLDivElement>, areaId: string) => void;
+  handleDrag: (e: React.DragEvent<HTMLDivElement>) => void;
 }
 
 const KanbanColumn = ({
@@ -38,6 +39,7 @@ const KanbanColumn = ({
   handleDrop,
   handleDragStart,
   handelDragEnd,
+  handleDrag,
 }: KanbanColumnProps) => {
   return (
     <div className="shrink-0 w-80">
@@ -85,7 +87,7 @@ const KanbanColumn = ({
           onDragLeave={handleDragLeave}
           onDrop={(e) => handleDrop(e, column.id)}
         >
-          <div className="space-y-3">
+          <div className="space-y-3 relative">
             {column.tasks.map((task, index) => (
               <KanbanTask
                 key={task.id}
@@ -96,6 +98,7 @@ const KanbanColumn = ({
                 areaId={column.id}
                 handleDragStart={handleDragStart}
                 handelDragEnd={handelDragEnd}
+                handleDrag={handleDrag}
               />
             ))}
           </div>
