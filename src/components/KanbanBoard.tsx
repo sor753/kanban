@@ -42,7 +42,7 @@ const KanbanBoard = () => {
     index: number,
     areaId: string,
   ) => {
-    // console.log('dragStart', e, index, areaId);
+    console.log('dragStart', e, index, areaId);
     setStartPos({ x: e.clientX, y: e.clientY });
     setDragStart({ index, areaId });
     const currentHeight = e.currentTarget.offsetHeight;
@@ -54,6 +54,8 @@ const KanbanBoard = () => {
     e.currentTarget.style.width = `${currentWidth}px`;
     e.currentTarget.style.height = `${currentHeight}px`;
     e.currentTarget.style.position = 'fixed';
+    e.currentTarget.style.zIndex = '1000';
+    e.currentTarget.style.transition = 'none';
   };
 
   const handleDrag = (e: React.DragEvent<HTMLDivElement>) => {
@@ -97,8 +99,12 @@ const KanbanBoard = () => {
     // index: number,
     areaId: string,
   ) => {
-    e.currentTarget.style.position = 'static';
-    e.currentTarget.style.transform = `translate(0px, 0px)`;
+    e.currentTarget.style.left = '';
+    e.currentTarget.style.top = '';
+    e.currentTarget.style.width = '';
+    e.currentTarget.style.height = '';
+    e.currentTarget.style.position = '';
+    e.currentTarget.style.transform = '';
     // console.log('drop', e, areaId);
     // const { source, destination } = result;
     setStartPos(null);
