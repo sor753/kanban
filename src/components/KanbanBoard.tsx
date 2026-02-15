@@ -42,20 +42,24 @@ const KanbanBoard = () => {
     index: number,
     areaId: string,
   ) => {
-    console.log('dragStart', e, index, areaId);
     setStartPos({ x: e.clientX, y: e.clientY });
     setDragStart({ index, areaId });
     const currentHeight = e.currentTarget.offsetHeight;
     const currentWidth = e.currentTarget.offsetWidth;
     const currentPositionX = e.currentTarget.getBoundingClientRect().x;
     const currentPositionY = e.currentTarget.getBoundingClientRect().y;
+    const ghostElement = e.currentTarget.cloneNode(true) as HTMLDivElement;
+    ghostElement.style.opacity = '0';
+    document.body.appendChild(ghostElement);
     e.currentTarget.style.left = `${currentPositionX}px`;
     e.currentTarget.style.top = `${currentPositionY}px`;
     e.currentTarget.style.width = `${currentWidth}px`;
     e.currentTarget.style.height = `${currentHeight}px`;
     e.currentTarget.style.position = 'fixed';
     e.currentTarget.style.zIndex = '1000';
-    e.currentTarget.style.transition = 'none';
+    e.currentTarget.style.opacity = '0.8';
+    e.currentTarget.style.transition = 'opacity 0.2s ease';
+    e.dataTransfer.setDragImage(ghostElement, 0, 0); // ドラッグ中のデフォルトのイメージを消す
   };
 
   const handleDrag = (e: React.DragEvent<HTMLDivElement>) => {
