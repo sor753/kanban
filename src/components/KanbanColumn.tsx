@@ -1,4 +1,5 @@
 import type { Column } from '../data/columns';
+import Droppable from './Droppable';
 import KanbanTask from './KanbanTask';
 import Button from './ui/Button';
 import { Plus, Trash2 } from 'lucide-react';
@@ -10,21 +11,6 @@ interface KanbanColumnProps {
   onUpdateTitle: (columnId: string, newTitle: string) => void;
   onUpdateTask: (taskId: string, newContent: string) => void;
   onDeleteTask: (taskId: string) => void;
-  onDragEnter: (_e: React.DragEvent<HTMLDivElement>, areaId?: string) => void;
-  handleDragOver: (e: React.DragEvent<HTMLDivElement>) => void;
-  handleDragLeave: () => void;
-  handleDrop: (
-    _e: React.DragEvent<HTMLDivElement>,
-    // index: number,
-    areaId: string,
-  ) => void;
-  handleDragStart: (
-    _e: React.DragEvent<HTMLDivElement>,
-    index: number,
-    areaId: string,
-  ) => void;
-  handelDragEnd: (_e: React.DragEvent<HTMLDivElement>, areaId: string) => void;
-  handleDrag: (e: React.DragEvent<HTMLDivElement>) => void;
 }
 
 const KanbanColumn = ({
@@ -33,13 +19,6 @@ const KanbanColumn = ({
   onAddTask,
   onUpdateTask,
   onDeleteTask,
-  onDragEnter,
-  handleDragOver,
-  handleDragLeave,
-  handleDrop,
-  handleDragStart,
-  handelDragEnd,
-  handleDrag,
 }: KanbanColumnProps) => {
   return (
     <div className="shrink-0 w-80">
@@ -73,38 +52,33 @@ const KanbanColumn = ({
             </Button>
           </div>
         </div>
-        {/* <Droppable droppableId={column.id}>
-          {(provided, snapshot) => ( */}
-        <div
-          // ref={provided.innerRef}
-          // {...provided.droppableProps}
-          // className={`p-4 overflow-y-auto flex-1 min-h-0 thin-scrollbar ${
-          //   snapshot.isDraggingOver ? 'bg-blue-50 dark:bg-blue-500' : ''
-          // }`}
-          className={`p-4 overflow-y-auto flex-1 min-h-0 thin-scrollbar`}
-          onDragEnter={(e) => onDragEnter(e, column.id)}
-          onDragOver={handleDragOver}
-          onDragLeave={handleDragLeave}
-          onDrop={(e) => handleDrop(e, column.id)}
-        >
-          <div className="space-y-3 relative">
-            {column.tasks.map((task, index) => (
-              <KanbanTask
-                key={task.id}
-                task={task}
-                index={index}
-                onUpdate={onUpdateTask}
-                onDelete={onDeleteTask}
-                areaId={column.id}
-                handleDragStart={handleDragStart}
-                handelDragEnd={handelDragEnd}
-                handleDrag={handleDrag}
-              />
-            ))}
-          </div>
-        </div>
-        {/* )}
-        </Droppable> */}
+        <Droppable areaId={column.id}>
+          {(deliver) => (
+            <div
+              ref={deliver.deliverRef}
+              {...deliver.event}
+              // className="p-4 overflow-y-auto flex-1 min-h-0 thin-scrollbar"
+              className={`p-4 overflow-y-auto flex-1 min-h-0 thin-scrollbar ${
+                deliver.state.isDraggingOver
+                  ? 'bg-blue-50 dark:bg-blue-500'
+                  : ''
+              }`}
+            >
+              <div className="space-y-3 relative">
+                {column.tasks.map((task, index) => (
+                  <KanbanTask
+                    key={task.id}
+                    task={task}
+                    index={index}
+                    onUpdate={onUpdateTask}
+                    onDelete={onDeleteTask}
+                    areaId={column.id}
+                  />
+                ))}
+              </div>
+            </div>
+          )}
+        </Droppable>
       </div>
     </div>
   );

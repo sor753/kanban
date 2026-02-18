@@ -25,6 +25,16 @@ export const defoultColumns: Column[] = [
         content: 'Set up database schema',
         createdAt: new Date('2025-07-25T00:00:00'),
       },
+      {
+        id: 'task-5',
+        content: 'Write unit tests for API endpoints',
+        createdAt: new Date('2025-07-25T00:00:00'),
+      },
+      {
+        id: 'task-6',
+        content: 'Research new frontend framework',
+        createdAt: new Date('2025-07-25T00:00:00'),
+      },
     ],
   },
   {
@@ -36,6 +46,16 @@ export const defoultColumns: Column[] = [
         content: 'Implement user authentication',
         createdAt: new Date('2025-07-25T00:00:00'),
       },
+      {
+        id: 'task-7',
+        content: 'Optimize database queries',
+        createdAt: new Date('2025-07-25T00:00:00'),
+      },
+      {
+        id: 'task-8',
+        content: 'Update project documentation',
+        createdAt: new Date('2025-07-25T00:00:00'),
+      },
     ],
   },
   {
@@ -45,6 +65,21 @@ export const defoultColumns: Column[] = [
       {
         id: 'task-4',
         content: 'Create project structure',
+        createdAt: new Date('2025-07-25T00:00:00'),
+      },
+      {
+        id: 'task-9',
+        content: 'Set up CI/CD pipeline',
+        createdAt: new Date('2025-07-25T00:00:00'),
+      },
+      {
+        id: 'task-10',
+        content: 'Conduct code review for recent PRs',
+        createdAt: new Date('2025-07-25T00:00:00'),
+      },
+      {
+        id: 'task-11',
+        content: 'Deploy latest version to staging',
         createdAt: new Date('2025-07-25T00:00:00'),
       },
     ],

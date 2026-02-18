@@ -20,3 +20,24 @@
 .dark .thin-scrollbar::-webkit-scrollbar-thumb {
   background-color: #3b82f6; /* Tailwind's blue-500 */
 }
+
+/* .draggable-cursor * {
+  cursor: move !important;
+  cursor: -webkit-grabbing !important;
+  cursor: -moz-grabbing !important;
+  cursor: grabbing !important;
+} */
+ .draggable-cursor * {
+  cursor: grabbing;
+  cursor: -webkit-grabbing;
+  user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  overflow-anchor: none;
+}
+
+.grab * {
+  cursor: -webkit-grab;
+  cursor: grab;
+}
