@@ -123,7 +123,7 @@ const DndContextProvider = ({
 
       // ドロップ要素内のドラッグ可能要素との重なり判定
       let maxOverlapRatio = 0;
-      let targetIndex: number = index;
+      let targetIndex: number | null = null;
 
       if (overlappingAreaId && draggableRefList.current) {
         for (const draggableRef of draggableRefList.current) {
@@ -162,7 +162,7 @@ const DndContextProvider = ({
 
             // Yの上半分に重なっていたらYのindexの1つ前、下半分なら1つ後
             if (overlapCenterY < otherCenterY) {
-              targetIndex = draggableRef.index - 1;
+              targetIndex = draggableRef.index;
             } else {
               targetIndex = draggableRef.index + 1;
             }
@@ -171,7 +171,18 @@ const DndContextProvider = ({
       }
 
       // dragEndを設定
-      setDragEnd({ index: targetIndex, areaId: overlappingAreaId || areaId });
+      const resolvedAreaId = overlappingAreaId || areaId;
+      if (targetIndex === null) {
+        setDragEnd(dragStart);
+        return;
+      }
+      let resolvedIndex = targetIndex;
+      if (resolvedAreaId === areaId) {
+        if (index < targetIndex) {
+          resolvedIndex = targetIndex - 1;
+        }
+      }
+      setDragEnd({ index: resolvedIndex, areaId: resolvedAreaId });
     }
   };
 
@@ -216,28 +227,6 @@ const DndContextProvider = ({
     setDragArea(undefined);
   };
   // draggable events <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
-  // droppable events >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-  const handleDropEnter = (
-    e: React.MouseEvent<HTMLDivElement, MouseEvent>,
-    areaId?: string,
-  ) => {
-    e.preventDefault();
-    // if (!isDraggingInfo) return;
-    if (!areaId) {
-      setDragArea(undefined);
-      return;
-    }
-
-    setDragArea(areaId);
-  };
-  const hadleDropLeave = (e: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
-    e.preventDefault();
-    // if (!isDraggingInfo) return;
-
-    setDragArea(undefined);
-  };
-
-  // droppable events <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 
   useEffect(() => {
     if (!draggableRefList.current) return;
@@ -274,10 +263,6 @@ const DndContextProvider = ({
           handleDrag,
           handleDragEnd,
           handleDragLeave,
-        },
-        droppableEvent: {
-          handleDropEnter,
-          hadleDropLeave,
         },
       }}
     >

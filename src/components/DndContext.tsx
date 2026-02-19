@@ -30,13 +30,6 @@ const DndContext = createContext<{
     handleDragEnd: (e: React.MouseEvent<HTMLDivElement, MouseEvent>) => void;
     handleDragLeave: (e: React.MouseEvent<HTMLDivElement, MouseEvent>) => void;
   };
-  droppableEvent: {
-    handleDropEnter: (
-      e: React.MouseEvent<HTMLDivElement, MouseEvent>,
-      areaId?: string,
-    ) => void;
-    hadleDropLeave: (e: React.MouseEvent<HTMLDivElement, MouseEvent>) => void;
-  };
 } | null>(null);
 
 export default DndContext;
