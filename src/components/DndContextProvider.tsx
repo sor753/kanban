@@ -213,6 +213,10 @@ const DndContextProvider = ({
         return;
       }
       if (targetIndex === null) {
+        if (resolvedAreaId === overlappingAreaId && lastAreaIndex === null) {
+          setDragEnd({ index: 0, areaId: resolvedAreaId });
+          return;
+        }
         setDragEnd({ index, areaId: resolvedAreaId });
         return;
       }
@@ -255,6 +259,7 @@ const DndContextProvider = ({
       setDragStart(null);
       setDragEnd(null);
       setStartPos(null);
+      setDraggingSize(null);
       setDragArea(undefined);
       return;
     }
@@ -269,8 +274,6 @@ const DndContextProvider = ({
     setDragArea(undefined);
   };
   // draggable events <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
-
-  console.log(dragEnd);
 
   useEffect(() => {
     if (!draggableRefList.current) return;
