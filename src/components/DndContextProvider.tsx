@@ -61,6 +61,8 @@ const DndContextProvider = ({
     height: number;
   } | null>(null);
 
+  // 全ドラッグ要素のインラインスタイルを初期化
+  // ドラッグ終了時に残る transform などを確実にリセットする
   const resetAllDraggableStyles = () => {
     if (!draggableRefList.current) return;
     draggableRefList.current.forEach((ref) => {
@@ -85,6 +87,7 @@ const DndContextProvider = ({
     index: number,
     areaId: string,
   ) => {
+    // 既にドラッグ中なら二重開始を防ぐ
     if (dragStart) return;
     setIsDraggingInfo({ index, areaId, isDragging: true });
     setStartPos({ x: e.clientX, y: e.clientY });
@@ -112,6 +115,7 @@ const DndContextProvider = ({
   ) => {
     if (!getIsDragging(areaId, index)) return;
     if (startPos) {
+      // 参照が未準備なら以降の重なり判定は不要
       if (!droppableRefList.current) return;
       if (!draggableRefList.current) return;
       const distanceX = e.clientX - startPos.x;
@@ -121,7 +125,7 @@ const DndContextProvider = ({
       // ドラッグ中の要素の現在の矩形を取得
       const dragRect = e.currentTarget.getBoundingClientRect();
 
-      // ドロップ可能な要素との重なり判定
+      // ドロップ可能エリア（カラム）との重なり判定
       let overlappingAreaId: string | undefined;
       for (const droppableRef of droppableRefList.current) {
         if (!droppableRef?.el) continue;
@@ -143,7 +147,7 @@ const DndContextProvider = ({
       // 重なっている要素が変わった場合のみ更新
       setDragArea(overlappingAreaId);
 
-      // ドロップ要素内のドラッグ可能要素との重なり判定
+      // 重なりエリア内のドラッグ要素のうち、最も重なっている要素を探す
       let maxOverlapRatio = 0;
       let targetIndex: number | null = null;
       let lastAreaIndex: number | null = null;
@@ -160,6 +164,7 @@ const DndContextProvider = ({
             continue;
           }
 
+          // エリア内の最後の要素の index / bottom を保持
           if (lastAreaIndex === null || draggableRef.index > lastAreaIndex) {
             lastAreaIndex = draggableRef.index;
             lastAreaBottom = draggableRef.el.getBoundingClientRect().bottom;
@@ -167,6 +172,8 @@ const DndContextProvider = ({
 
           const otherRect = draggableRef.el.getBoundingClientRect();
 
+          // 既に空けている隙間（ドラッグ要素の高さ）も重なり判定に含める
+          // これにより「隙間の上」でも重なり判定が成立する
           const shouldExpandGap =
             !!draggingSize &&
             !!dragStart &&
@@ -203,6 +210,7 @@ const DndContextProvider = ({
               ? overlapArea / (otherWidth * otherHeight)
               : 0;
 
+          // 最も重なり率が高い要素をターゲットにする
           if (overlapArea > 0 && overlapRatio > maxOverlapRatio) {
             maxOverlapRatio = overlapRatio;
             const overlapCenterY = (overlapTop + overlapBottom) / 2;
@@ -218,7 +226,7 @@ const DndContextProvider = ({
         }
       }
 
-      // dragEndを設定
+      // dragEndを設定（ここで並び替え先の index が決まる）
       const resolvedAreaId = overlappingAreaId || areaId;
       if (
         resolvedAreaId === overlappingAreaId &&
@@ -226,20 +234,24 @@ const DndContextProvider = ({
         lastAreaBottom !== null &&
         dragRect.top > lastAreaBottom
       ) {
+        // 最下段より下なら末尾に挿入
         setDragEnd({ index: lastAreaIndex + 1, areaId: resolvedAreaId });
         return;
       }
       if (targetIndex === null) {
         if (resolvedAreaId === overlappingAreaId && lastAreaIndex === null) {
+          // エリアが空なら先頭に挿入
           setDragEnd({ index: 0, areaId: resolvedAreaId });
           return;
         }
+        // 明確な重なりが無い場合は現在の index を維持
         setDragEnd({ index, areaId: resolvedAreaId });
         return;
       }
       let resolvedIndex = targetIndex;
       if (resolvedAreaId === areaId) {
         if (index < targetIndex) {
+          // 同一エリア内の移動で、元の位置より後ろに入れる場合は 1 つ戻す
           resolvedIndex = targetIndex - 1;
         }
       }
@@ -248,12 +260,14 @@ const DndContextProvider = ({
   };
 
   const handleDragLeave = (e: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
+    // ドラッグ中の要素の見た目を即時リセット
     e.currentTarget.style.left = '';
     e.currentTarget.style.top = '';
     e.currentTarget.style.width = '';
     e.currentTarget.style.height = '';
     e.currentTarget.style.position = '';
     e.currentTarget.style.transform = '';
+    // 他要素の transform なども全てクリア
     resetAllDraggableStyles();
     setIsDraggingInfo(undefined);
     setDragStart(null);
@@ -265,6 +279,7 @@ const DndContextProvider = ({
 
   // drop: ドラッグ要素がドロップ要素上にドロップされたとき
   const handleDragEnd = (e: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
+    // ドロップ時も見た目を初期化
     e.currentTarget.style.left = '';
     e.currentTarget.style.top = '';
     e.currentTarget.style.width = '';
@@ -274,6 +289,7 @@ const DndContextProvider = ({
     resetAllDraggableStyles();
 
     if (!dragArea) {
+      // ドロップ先が無い場合は状態をクリアして終了
       setIsDraggingInfo(undefined);
       setDragStart(null);
       setDragEnd(null);
@@ -295,6 +311,7 @@ const DndContextProvider = ({
   // draggable events <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 
   useEffect(() => {
+    // dragEnd に応じて、同一エリア内の他要素を下へずらし隙間を作る
     if (!draggableRefList.current) return;
     if (!dragStart) {
       draggableRefList.current.forEach((ref) => {
