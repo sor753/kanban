@@ -56,6 +56,10 @@ const DndContextProvider = ({
   const [startPos, setStartPos] = useState<{ x: number; y: number } | null>(
     null,
   );
+  const [draggingSize, setDraggingSize] = useState<{
+    width: number;
+    height: number;
+  } | null>(null);
 
   // draggable events >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
   // dragstart: ドラッグの開始
@@ -70,6 +74,7 @@ const DndContextProvider = ({
     setDragStart({ index, areaId });
     const currentHeight = e.currentTarget.offsetHeight;
     const currentWidth = e.currentTarget.offsetWidth;
+    setDraggingSize({ width: currentWidth, height: currentHeight });
     // const ghostElement = e.currentTarget.cloneNode(true) as HTMLDivElement;
     // ghostElement.style.opacity = '0';
     // document.body.appendChild(ghostElement);
@@ -124,6 +129,8 @@ const DndContextProvider = ({
       // ドロップ要素内のドラッグ可能要素との重なり判定
       let maxOverlapRatio = 0;
       let targetIndex: number | null = null;
+      let lastAreaIndex: number | null = null;
+      let lastAreaBottom: number | null = null;
 
       if (overlappingAreaId && draggableRefList.current) {
         for (const draggableRef of draggableRefList.current) {
@@ -136,20 +143,44 @@ const DndContextProvider = ({
             continue;
           }
 
+          if (lastAreaIndex === null || draggableRef.index > lastAreaIndex) {
+            lastAreaIndex = draggableRef.index;
+            lastAreaBottom = draggableRef.el.getBoundingClientRect().bottom;
+          }
+
           const otherRect = draggableRef.el.getBoundingClientRect();
 
+          const shouldExpandGap =
+            !!draggingSize &&
+            !!dragStart &&
+            !!dragEnd &&
+            dragEnd.areaId === overlappingAreaId &&
+            draggableRef.areaId === dragEnd.areaId &&
+            draggableRef.index >= dragEnd.index &&
+            !(
+              draggableRef.areaId === dragStart.areaId &&
+              draggableRef.index === dragStart.index
+            );
+
+          const otherRectTop = shouldExpandGap
+            ? otherRect.top - draggingSize.height
+            : otherRect.top;
+          const otherRectBottom = otherRect.bottom;
+          const otherRectLeft = otherRect.left;
+          const otherRectRight = otherRect.right;
+
           // 重なり矩形を計算
-          const overlapLeft = Math.max(dragRect.left, otherRect.left);
-          const overlapTop = Math.max(dragRect.top, otherRect.top);
-          const overlapRight = Math.min(dragRect.right, otherRect.right);
-          const overlapBottom = Math.min(dragRect.bottom, otherRect.bottom);
+          const overlapLeft = Math.max(dragRect.left, otherRectLeft);
+          const overlapTop = Math.max(dragRect.top, otherRectTop);
+          const overlapRight = Math.min(dragRect.right, otherRectRight);
+          const overlapBottom = Math.min(dragRect.bottom, otherRectBottom);
 
           const overlapWidth = Math.max(0, overlapRight - overlapLeft);
           const overlapHeight = Math.max(0, overlapBottom - overlapTop);
           const overlapArea = overlapWidth * overlapHeight;
 
-          const otherWidth = otherRect.right - otherRect.left;
-          const otherHeight = otherRect.bottom - otherRect.top;
+          const otherWidth = otherRectRight - otherRectLeft;
+          const otherHeight = otherRectBottom - otherRectTop;
           const overlapRatio =
             otherHeight > 0 && otherWidth > 0
               ? overlapArea / (otherWidth * otherHeight)
@@ -158,7 +189,7 @@ const DndContextProvider = ({
           if (overlapArea > 0 && overlapRatio > maxOverlapRatio) {
             maxOverlapRatio = overlapRatio;
             const overlapCenterY = (overlapTop + overlapBottom) / 2;
-            const otherCenterY = (otherRect.top + otherRect.bottom) / 2;
+            const otherCenterY = (otherRectTop + otherRectBottom) / 2;
 
             // Yの上半分に重なっていたらYのindexの1つ前、下半分なら1つ後
             if (overlapCenterY < otherCenterY) {
@@ -172,8 +203,17 @@ const DndContextProvider = ({
 
       // dragEndを設定
       const resolvedAreaId = overlappingAreaId || areaId;
+      if (
+        resolvedAreaId === overlappingAreaId &&
+        lastAreaIndex !== null &&
+        lastAreaBottom !== null &&
+        dragRect.top > lastAreaBottom
+      ) {
+        setDragEnd({ index: lastAreaIndex + 1, areaId: resolvedAreaId });
+        return;
+      }
       if (targetIndex === null) {
-        setDragEnd(dragStart);
+        setDragEnd({ index, areaId: resolvedAreaId });
         return;
       }
       let resolvedIndex = targetIndex;
@@ -197,6 +237,7 @@ const DndContextProvider = ({
     setDragStart(null);
     setDragEnd(null);
     setStartPos(null);
+    setDraggingSize(null);
     setDragArea(undefined);
   };
 
@@ -224,32 +265,49 @@ const DndContextProvider = ({
     setDragStart(null);
     setDragEnd(null);
     setStartPos(null);
+    setDraggingSize(null);
     setDragArea(undefined);
   };
   // draggable events <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 
+  console.log(dragEnd);
+
   useEffect(() => {
     if (!draggableRefList.current) return;
-    draggableRefList.current.map((ref) => {
-      if (!ref) return;
-      if (!ref.el) return;
-      ref.el.style.cursor = 'grab';
-      //   ref.el.addEventListener('mousedown', (e) => {
-      //     handleDragStart(e, ref.index, ref.areaId);
-      //   });
-      //   ref.el.addEventListener('mousemove', (e) => {
-      //     handleDrag(e, ref.index, ref.areaId);
-      //   });
-      //   ref.el.addEventListener('mouseup', (e) => {
-      //     handleDragEnd(e);
-      //   });
-      //   ref.el.addEventListener('mouseleave', (e) => {
-      //     handleDragLeave(e);
-      //   });
+    if (!dragStart) {
+      draggableRefList.current.forEach((ref) => {
+        if (!ref?.el) return;
+        ref.el.style.transform = '';
+      });
+      return;
+    }
+    if (!dragEnd) return;
+
+    const currentDraggable = draggableRefList.current.filter(
+      (ref) => ref?.areaId === dragEnd.areaId,
+    );
+    if (currentDraggable.length === 0) return;
+    currentDraggable.forEach((ref) => {
+      if (!ref?.el) return;
+      if (ref.areaId === dragStart.areaId && ref.index === dragStart.index)
+        return;
+      if (ref.index < dragEnd.index) {
+        ref.el.style.transform = ``;
+        return;
+      }
+      ref.el.style.transform = `translateY(${ref.el.offsetHeight}px)`;
     });
-    // 重なった時の処理を書きたい
-    // dndRefList.current.map((dndRef) => {dndRef?.});
-  }, [draggableRefList]);
+    const otherDraggables = draggableRefList.current.filter(
+      (ref) => ref?.areaId !== dragEnd.areaId,
+    );
+    if (otherDraggables.length === 0) return;
+    otherDraggables.forEach((ref) => {
+      if (!ref?.el) return;
+      if (ref.areaId === dragStart.areaId && ref.index === dragStart.index)
+        return;
+      ref.el.style.transform = ``;
+    });
+  }, [draggableRefList, dragStart, dragEnd]);
 
   return (
     <DndContext.Provider
