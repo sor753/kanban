@@ -61,6 +61,22 @@ const DndContextProvider = ({
     height: number;
   } | null>(null);
 
+  const resetAllDraggableStyles = () => {
+    if (!draggableRefList.current) return;
+    draggableRefList.current.forEach((ref) => {
+      if (!ref?.el) return;
+      ref.el.style.left = '';
+      ref.el.style.top = '';
+      ref.el.style.width = '';
+      ref.el.style.height = '';
+      ref.el.style.position = '';
+      ref.el.style.transform = '';
+      ref.el.style.transition = '';
+      ref.el.style.opacity = '';
+      ref.el.style.zIndex = '';
+    });
+  };
+
   // draggable events >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
   // dragstart: ドラッグの開始
   // e.dataTransferの代わりにuseStateを使用すると、より多くのデータを転送できます。
@@ -69,6 +85,7 @@ const DndContextProvider = ({
     index: number,
     areaId: string,
   ) => {
+    if (dragStart) return;
     setIsDraggingInfo({ index, areaId, isDragging: true });
     setStartPos({ x: e.clientX, y: e.clientY });
     setDragStart({ index, areaId });
@@ -95,6 +112,8 @@ const DndContextProvider = ({
   ) => {
     if (!getIsDragging(areaId, index)) return;
     if (startPos) {
+      if (!droppableRefList.current) return;
+      if (!draggableRefList.current) return;
       const distanceX = e.clientX - startPos.x;
       const distanceY = e.clientY - startPos.y;
       e.currentTarget.style.transform = `translate(${distanceX}px, ${distanceY}px)`;
@@ -104,22 +123,20 @@ const DndContextProvider = ({
 
       // ドロップ可能な要素との重なり判定
       let overlappingAreaId: string | undefined;
-      if (droppableRefList.current) {
-        for (const droppableRef of droppableRefList.current) {
-          if (!droppableRef?.el) continue;
-          const dropRect = droppableRef.el.getBoundingClientRect();
+      for (const droppableRef of droppableRefList.current) {
+        if (!droppableRef?.el) continue;
+        const dropRect = droppableRef.el.getBoundingClientRect();
 
-          // 矩形同士が重なっているかを判定
-          const isOverlapping =
-            dragRect.left < dropRect.right &&
-            dragRect.right > dropRect.left &&
-            dragRect.top < dropRect.bottom &&
-            dragRect.bottom > dropRect.top;
+        // 矩形同士が重なっているかを判定
+        const isOverlapping =
+          dragRect.left < dropRect.right &&
+          dragRect.right > dropRect.left &&
+          dragRect.top < dropRect.bottom &&
+          dragRect.bottom > dropRect.top;
 
-          if (isOverlapping) {
-            overlappingAreaId = droppableRef.areaId;
-            break;
-          }
+        if (isOverlapping) {
+          overlappingAreaId = droppableRef.areaId;
+          break;
         }
       }
 
@@ -132,7 +149,7 @@ const DndContextProvider = ({
       let lastAreaIndex: number | null = null;
       let lastAreaBottom: number | null = null;
 
-      if (overlappingAreaId && draggableRefList.current) {
+      if (overlappingAreaId) {
         for (const draggableRef of draggableRefList.current) {
           if (!draggableRef?.el) continue;
           // 同じドロップ要素内で、ドラッグ要素自身を除く
@@ -237,6 +254,7 @@ const DndContextProvider = ({
     e.currentTarget.style.height = '';
     e.currentTarget.style.position = '';
     e.currentTarget.style.transform = '';
+    resetAllDraggableStyles();
     setIsDraggingInfo(undefined);
     setDragStart(null);
     setDragEnd(null);
@@ -253,6 +271,7 @@ const DndContextProvider = ({
     e.currentTarget.style.height = '';
     e.currentTarget.style.position = '';
     e.currentTarget.style.transform = '';
+    resetAllDraggableStyles();
 
     if (!dragArea) {
       setIsDraggingInfo(undefined);
