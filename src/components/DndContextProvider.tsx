@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import DndContext from './DndContext';
 import {
   useDraggableRefList,
@@ -59,6 +59,14 @@ const DndContextProvider = ({
   const [draggingSize, setDraggingSize] = useState<{
     width: number;
     height: number;
+  } | null>(null);
+  const dragFrameRequestId = useRef<number | null>(null);
+  const latestDrag = useRef<{
+    clientX: number;
+    clientY: number;
+    target: HTMLDivElement;
+    index: number;
+    areaId: string;
   } | null>(null);
 
   // 全ドラッグ要素のインラインスタイルを初期化
@@ -250,32 +258,63 @@ const DndContextProvider = ({
     index: number,
     areaId: string,
   ) => {
+    // 自分がドラッグ中の対象でなければ処理しない
     if (!getIsDragging(areaId, index)) return;
-    if (startPos) {
+    // 開始座標が無い場合はまだドラッグが成立していない
+    if (!startPos) return;
+
+    // 最新のマウス座標と対象要素を保存（raf内で使用）
+    latestDrag.current = {
+      clientX: e.clientX,
+      clientY: e.clientY,
+      target: e.currentTarget,
+      index,
+      areaId,
+    };
+
+    // 既にフレーム予約済みなら追加予約しない（1フレームに1回だけ処理）
+    if (dragFrameRequestId.current !== null) return;
+
+    // 次の描画タイミングで重い処理をまとめて実行
+    dragFrameRequestId.current = requestAnimationFrame(() => {
+      // 予約を解放
+      dragFrameRequestId.current = null;
+      const payload = latestDrag.current;
+      // 最新データまたは開始座標が無ければ何もしない
+      if (!payload || !startPos) return;
+
+      // 参照が未準備なら以降の重なり判定は不要
       // 参照が未準備なら以降の重なり判定は不要
       if (!droppableRefList.current) return;
       if (!draggableRefList.current) return;
-      const distanceX = e.clientX - startPos.x;
-      const distanceY = e.clientY - startPos.y;
-      e.currentTarget.style.transform = `translate(${distanceX}px, ${distanceY}px)`;
+
+      // 開始座標からの移動量を計算し、見た目を追従させる
+      const distanceX = payload.clientX - startPos.x;
+      const distanceY = payload.clientY - startPos.y;
+      payload.target.style.transform = `translate(${distanceX}px, ${distanceY}px)`;
 
       // ドラッグ中の要素の現在の矩形を取得
-      const dragRect = e.currentTarget.getBoundingClientRect();
+      // ドラッグ中の要素の現在の矩形を取得
+      const dragRect = payload.target.getBoundingClientRect();
 
+      // どのドロップエリアに重なっているかを判定
       const overlappingAreaId = getOverlappingAreaId(dragRect);
 
       // 重なっている要素が変わった場合のみ更新
+      // 重なっている要素が変わった場合のみ更新
       setDragArea(overlappingAreaId);
 
+      // 現在の重なり情報から dragEnd（挿入先のindex）を計算
       const nextDragEnd = resolveDragEnd({
         dragRect,
-        areaId,
-        index,
+        areaId: payload.areaId,
+        index: payload.index,
         overlappingAreaId,
       });
 
+      // 計算結果を反映
       setDragEnd(nextDragEnd);
-    }
+    });
   };
 
   const handleDragLeave = (e: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
