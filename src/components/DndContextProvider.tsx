@@ -56,9 +56,7 @@ const DndContextProvider = ({
     [dragArea],
   );
 
-  const [startPos, setStartPos] = useState<{ x: number; y: number } | null>(
-    null,
-  );
+  const startPosRef = useRef<{ x: number; y: number } | null>(null);
   const [draggingSize, setDraggingSize] = useState<{
     width: number;
     height: number;
@@ -238,7 +236,7 @@ const DndContextProvider = ({
     // 既にドラッグ中なら二重開始を防ぐ
     if (dragStart) return;
     setIsDraggingInfo({ index, areaId, isDragging: true });
-    setStartPos({ x: e.clientX, y: e.clientY });
+    startPosRef.current = { x: e.clientX, y: e.clientY };
     setDragStart({ index, areaId });
     const currentHeight = e.currentTarget.offsetHeight;
     const currentWidth = e.currentTarget.offsetWidth;
@@ -264,6 +262,7 @@ const DndContextProvider = ({
     // 自分がドラッグ中の対象でなければ処理しない
     if (!getIsDragging(areaId, index)) return;
     // 開始座標が無い場合はまだドラッグが成立していない
+    const startPos = startPosRef.current;
     if (!startPos) return;
 
     // 最新のマウス座標と対象要素を保存（raf内で使用）
@@ -338,7 +337,7 @@ const DndContextProvider = ({
     setIsDraggingInfo(undefined);
     setDragStart(null);
     setDragEnd(null);
-    setStartPos(null);
+    startPosRef.current = null;
     setDraggingSize(null);
     setDragArea(undefined);
   };
@@ -364,7 +363,7 @@ const DndContextProvider = ({
       setIsDraggingInfo(undefined);
       setDragStart(null);
       setDragEnd(null);
-      setStartPos(null);
+      startPosRef.current = null;
       setDraggingSize(null);
       setDragArea(undefined);
       return;
@@ -375,7 +374,7 @@ const DndContextProvider = ({
     setIsDraggingInfo(undefined);
     setDragStart(null);
     setDragEnd(null);
-    setStartPos(null);
+    startPosRef.current = null;
     setDraggingSize(null);
     setDragArea(undefined);
   };
