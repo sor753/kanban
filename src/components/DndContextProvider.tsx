@@ -79,6 +79,143 @@ const DndContextProvider = ({
     });
   };
 
+  const getOverlappingAreaId = (dragRect: DOMRect) => {
+    if (!droppableRefList.current) return undefined;
+
+    for (const droppableRef of droppableRefList.current) {
+      if (!droppableRef?.el) continue;
+      const dropRect = droppableRef.el.getBoundingClientRect();
+
+      const isOverlapping =
+        dragRect.left < dropRect.right &&
+        dragRect.right > dropRect.left &&
+        dragRect.top < dropRect.bottom &&
+        dragRect.bottom > dropRect.top;
+
+      if (isOverlapping) return droppableRef.areaId;
+    }
+
+    return undefined;
+  };
+
+  const resolveDragEnd = (params: {
+    dragRect: DOMRect;
+    areaId: string;
+    index: number;
+    overlappingAreaId: string | undefined;
+  }) => {
+    const { dragRect, areaId, index, overlappingAreaId } = params;
+
+    if (!draggableRefList.current) {
+      return { index, areaId: overlappingAreaId || areaId };
+    }
+
+    let maxOverlapRatio = 0;
+    let targetIndex: number | null = null;
+    let lastAreaIndex: number | null = null;
+    let lastAreaBottom: number | null = null;
+
+    if (overlappingAreaId) {
+      for (const draggableRef of draggableRefList.current) {
+        if (!draggableRef?.el) continue;
+        if (
+          draggableRef.areaId !== overlappingAreaId ||
+          draggableRef.index === index
+        ) {
+          continue;
+        }
+
+        // エリア内の最後の要素の index / bottom を保持
+        if (lastAreaIndex === null || draggableRef.index > lastAreaIndex) {
+          lastAreaIndex = draggableRef.index;
+          lastAreaBottom = draggableRef.el.getBoundingClientRect().bottom;
+        }
+
+        const otherRect = draggableRef.el.getBoundingClientRect();
+
+        // 既に空けている隙間（ドラッグ要素の高さ）も重なり判定に含める
+        // これにより「隙間の上」でも重なり判定が成立する
+        const shouldExpandGap =
+          !!draggingSize &&
+          !!dragStart &&
+          !!dragEnd &&
+          dragEnd.areaId === overlappingAreaId &&
+          draggableRef.areaId === dragEnd.areaId &&
+          draggableRef.index >= dragEnd.index &&
+          !(
+            draggableRef.areaId === dragStart.areaId &&
+            draggableRef.index === dragStart.index
+          );
+
+        const otherRectTop = shouldExpandGap
+          ? otherRect.top - draggingSize.height
+          : otherRect.top;
+        const otherRectBottom = otherRect.bottom;
+        const otherRectLeft = otherRect.left;
+        const otherRectRight = otherRect.right;
+
+        // 重なり矩形を計算
+        const overlapLeft = Math.max(dragRect.left, otherRectLeft);
+        const overlapTop = Math.max(dragRect.top, otherRectTop);
+        const overlapRight = Math.min(dragRect.right, otherRectRight);
+        const overlapBottom = Math.min(dragRect.bottom, otherRectBottom);
+
+        const overlapWidth = Math.max(0, overlapRight - overlapLeft);
+        const overlapHeight = Math.max(0, overlapBottom - overlapTop);
+        const overlapArea = overlapWidth * overlapHeight;
+
+        const otherWidth = otherRectRight - otherRectLeft;
+        const otherHeight = otherRectBottom - otherRectTop;
+        const overlapRatio =
+          otherHeight > 0 && otherWidth > 0
+            ? overlapArea / (otherWidth * otherHeight)
+            : 0;
+
+        // 最も重なり率が高い要素をターゲットにする
+        if (overlapArea > 0 && overlapRatio > maxOverlapRatio) {
+          maxOverlapRatio = overlapRatio;
+          const overlapCenterY = (overlapTop + overlapBottom) / 2;
+          const otherCenterY = (otherRectTop + otherRectBottom) / 2;
+
+          // Yの上半分に重なっていたらYのindexの1つ前、下半分なら1つ後
+          if (overlapCenterY < otherCenterY) {
+            targetIndex = draggableRef.index;
+          } else {
+            targetIndex = draggableRef.index + 1;
+          }
+        }
+      }
+    }
+
+    // dragEndを設定（ここで並び替え先の index が決まる）
+    const resolvedAreaId = overlappingAreaId || areaId;
+    if (
+      resolvedAreaId === overlappingAreaId &&
+      lastAreaIndex !== null &&
+      lastAreaBottom !== null &&
+      dragRect.top > lastAreaBottom
+    ) {
+      // 最下段より下なら末尾に挿入
+      return { index: lastAreaIndex + 1, areaId: resolvedAreaId };
+    }
+    if (targetIndex === null) {
+      if (resolvedAreaId === overlappingAreaId && lastAreaIndex === null) {
+        // エリアが空なら先頭に挿入
+        return { index: 0, areaId: resolvedAreaId };
+      }
+      // 明確な重なりが無い場合は現在の index を維持
+      return { index, areaId: resolvedAreaId };
+    }
+    let resolvedIndex = targetIndex;
+    if (resolvedAreaId === areaId) {
+      if (index < targetIndex) {
+        // 同一エリア内の移動で、元の位置より後ろに入れる場合は 1 つ戻す
+        resolvedIndex = targetIndex - 1;
+      }
+    }
+    return { index: resolvedIndex, areaId: resolvedAreaId };
+  };
+
   // draggable events >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
   // dragstart: ドラッグの開始
   // e.dataTransferの代わりにuseStateを使用すると、より多くのデータを転送できます。
@@ -125,137 +262,19 @@ const DndContextProvider = ({
       // ドラッグ中の要素の現在の矩形を取得
       const dragRect = e.currentTarget.getBoundingClientRect();
 
-      // ドロップ可能エリア（カラム）との重なり判定
-      let overlappingAreaId: string | undefined;
-      for (const droppableRef of droppableRefList.current) {
-        if (!droppableRef?.el) continue;
-        const dropRect = droppableRef.el.getBoundingClientRect();
-
-        // 矩形同士が重なっているかを判定
-        const isOverlapping =
-          dragRect.left < dropRect.right &&
-          dragRect.right > dropRect.left &&
-          dragRect.top < dropRect.bottom &&
-          dragRect.bottom > dropRect.top;
-
-        if (isOverlapping) {
-          overlappingAreaId = droppableRef.areaId;
-          break;
-        }
-      }
+      const overlappingAreaId = getOverlappingAreaId(dragRect);
 
       // 重なっている要素が変わった場合のみ更新
       setDragArea(overlappingAreaId);
 
-      // 重なりエリア内のドラッグ要素のうち、最も重なっている要素を探す
-      let maxOverlapRatio = 0;
-      let targetIndex: number | null = null;
-      let lastAreaIndex: number | null = null;
-      let lastAreaBottom: number | null = null;
+      const nextDragEnd = resolveDragEnd({
+        dragRect,
+        areaId,
+        index,
+        overlappingAreaId,
+      });
 
-      if (overlappingAreaId) {
-        for (const draggableRef of draggableRefList.current) {
-          if (!draggableRef?.el) continue;
-          // 同じドロップ要素内で、ドラッグ要素自身を除く
-          if (
-            draggableRef.areaId !== overlappingAreaId ||
-            draggableRef.index === index
-          ) {
-            continue;
-          }
-
-          // エリア内の最後の要素の index / bottom を保持
-          if (lastAreaIndex === null || draggableRef.index > lastAreaIndex) {
-            lastAreaIndex = draggableRef.index;
-            lastAreaBottom = draggableRef.el.getBoundingClientRect().bottom;
-          }
-
-          const otherRect = draggableRef.el.getBoundingClientRect();
-
-          // 既に空けている隙間（ドラッグ要素の高さ）も重なり判定に含める
-          // これにより「隙間の上」でも重なり判定が成立する
-          const shouldExpandGap =
-            !!draggingSize &&
-            !!dragStart &&
-            !!dragEnd &&
-            dragEnd.areaId === overlappingAreaId &&
-            draggableRef.areaId === dragEnd.areaId &&
-            draggableRef.index >= dragEnd.index &&
-            !(
-              draggableRef.areaId === dragStart.areaId &&
-              draggableRef.index === dragStart.index
-            );
-
-          const otherRectTop = shouldExpandGap
-            ? otherRect.top - draggingSize.height
-            : otherRect.top;
-          const otherRectBottom = otherRect.bottom;
-          const otherRectLeft = otherRect.left;
-          const otherRectRight = otherRect.right;
-
-          // 重なり矩形を計算
-          const overlapLeft = Math.max(dragRect.left, otherRectLeft);
-          const overlapTop = Math.max(dragRect.top, otherRectTop);
-          const overlapRight = Math.min(dragRect.right, otherRectRight);
-          const overlapBottom = Math.min(dragRect.bottom, otherRectBottom);
-
-          const overlapWidth = Math.max(0, overlapRight - overlapLeft);
-          const overlapHeight = Math.max(0, overlapBottom - overlapTop);
-          const overlapArea = overlapWidth * overlapHeight;
-
-          const otherWidth = otherRectRight - otherRectLeft;
-          const otherHeight = otherRectBottom - otherRectTop;
-          const overlapRatio =
-            otherHeight > 0 && otherWidth > 0
-              ? overlapArea / (otherWidth * otherHeight)
-              : 0;
-
-          // 最も重なり率が高い要素をターゲットにする
-          if (overlapArea > 0 && overlapRatio > maxOverlapRatio) {
-            maxOverlapRatio = overlapRatio;
-            const overlapCenterY = (overlapTop + overlapBottom) / 2;
-            const otherCenterY = (otherRectTop + otherRectBottom) / 2;
-
-            // Yの上半分に重なっていたらYのindexの1つ前、下半分なら1つ後
-            if (overlapCenterY < otherCenterY) {
-              targetIndex = draggableRef.index;
-            } else {
-              targetIndex = draggableRef.index + 1;
-            }
-          }
-        }
-      }
-
-      // dragEndを設定（ここで並び替え先の index が決まる）
-      const resolvedAreaId = overlappingAreaId || areaId;
-      if (
-        resolvedAreaId === overlappingAreaId &&
-        lastAreaIndex !== null &&
-        lastAreaBottom !== null &&
-        dragRect.top > lastAreaBottom
-      ) {
-        // 最下段より下なら末尾に挿入
-        setDragEnd({ index: lastAreaIndex + 1, areaId: resolvedAreaId });
-        return;
-      }
-      if (targetIndex === null) {
-        if (resolvedAreaId === overlappingAreaId && lastAreaIndex === null) {
-          // エリアが空なら先頭に挿入
-          setDragEnd({ index: 0, areaId: resolvedAreaId });
-          return;
-        }
-        // 明確な重なりが無い場合は現在の index を維持
-        setDragEnd({ index, areaId: resolvedAreaId });
-        return;
-      }
-      let resolvedIndex = targetIndex;
-      if (resolvedAreaId === areaId) {
-        if (index < targetIndex) {
-          // 同一エリア内の移動で、元の位置より後ろに入れる場合は 1 つ戻す
-          resolvedIndex = targetIndex - 1;
-        }
-      }
-      setDragEnd({ index: resolvedIndex, areaId: resolvedAreaId });
+      setDragEnd(nextDragEnd);
     }
   };
 
