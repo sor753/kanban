@@ -48,10 +48,13 @@ const DndContextProvider = ({
 
   const droppableRefList = useDroppableRefList<HTMLDivElement>();
   const [dragArea, setDragArea] = useState<string>();
-  const getIsDraggingOver = (areaId: string) => {
-    if (!dragArea) return false;
-    return dragArea === areaId;
-  };
+  const getIsDraggingOver = useCallback(
+    (areaId: string) => {
+      if (!dragArea) return false;
+      return dragArea === areaId;
+    },
+    [dragArea],
+  );
 
   const [startPos, setStartPos] = useState<{ x: number; y: number } | null>(
     null,
