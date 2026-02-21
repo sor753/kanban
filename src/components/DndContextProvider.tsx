@@ -325,6 +325,11 @@ const DndContextProvider = ({
     e.currentTarget.style.height = '';
     e.currentTarget.style.position = '';
     e.currentTarget.style.transform = '';
+    if (dragFrameRequestId.current !== null) {
+      cancelAnimationFrame(dragFrameRequestId.current);
+      dragFrameRequestId.current = null;
+    }
+    latestDrag.current = null;
     // 他要素の transform なども全てクリア
     resetAllDraggableStyles();
     setIsDraggingInfo(undefined);
@@ -344,6 +349,11 @@ const DndContextProvider = ({
     e.currentTarget.style.height = '';
     e.currentTarget.style.position = '';
     e.currentTarget.style.transform = '';
+    if (dragFrameRequestId.current !== null) {
+      cancelAnimationFrame(dragFrameRequestId.current);
+      dragFrameRequestId.current = null;
+    }
+    latestDrag.current = null;
     resetAllDraggableStyles();
 
     if (!dragArea) {
